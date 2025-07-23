@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: websocket-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: websocket
+  template:
+    metadata:
+      labels:
+        app: websocket
+    spec:
+      containers:
+        - name: websocket
+          image: chat-actor-websocket:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 9002
+          env:
+            - name: RELAY_COUNT
+              valueFrom:
+                configMapKeyRef:
+                  name: websocket-config
+                  key: RELAY_COUNT
+            - name: RELAY_START_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: websocket-config
+                  key: RELAY_START_ID
+            - name: MAX_CONNECTIONS_PER_RELAY
+              valueFrom:
+                configMapKeyRef:
+                  name: websocket-config
+                  key: MAX_CONNECTIONS_PER_RELAY
+            - name: REDIS_CLUSTER_NODES
+              valueFrom:
+                configMapKeyRef:
+                  name: websocket-config
+                  key: REDIS_CLUSTER_NODES
+            - name: REDIS_FALLBACK_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: websocket-config
+                  key: REDIS_FALLBACK_URL
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9002
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9002
+            initialDelaySeconds: 30
+            periodSeconds: 10
